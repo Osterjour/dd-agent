@@ -98,9 +98,16 @@ class Cpu(Check):
                              ' No CPU metrics will be returned.')
             return
 
-        cpu_user = self._average_metric(cpu, 'PercentUserTime')
-        if cpu_user:
-            self.save_sample('system.cpu.user', cpu_user)
+        nonidle_time_percent = self._average_metric(cpu, 'PercentProcessorTime')
+        norm_coeff = nonidle_time_percent / 100
+        if nonidle_time:
+            cpu_user = self._average_metric(cpu, 'PercentUserTime')
+            if cpu_user:
+                self.save_sample('system.cpu.user', cpu_user * norm_coeff)
+
+            cpu_privileged = self._average_metric(cpu, 'PercentPrivilegedTime')
+            if cpu_privileged is not None:
+                self.save_sample('system.cpu.system', cpu_privileged * norm_coeff)
 
         cpu_idle = self._average_metric(cpu, 'PercentIdleTime')
         if cpu_idle:
@@ -109,10 +116,6 @@ class Cpu(Check):
         cpu_interrupt = self._average_metric(cpu, 'PercentInterruptTime')
         if cpu_interrupt is not None:
             self.save_sample('system.cpu.interrupt', cpu_interrupt)
-
-        cpu_privileged = self._average_metric(cpu, 'PercentPrivilegedTime')
-        if cpu_privileged is not None:
-            self.save_sample('system.cpu.system', cpu_privileged)
 
         return self.get_metrics()
 
